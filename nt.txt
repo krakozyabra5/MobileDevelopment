@@ -1,0 +1,128 @@
+<?php
+	$mysqli=new mysqli('localhost','root','','kino');
+	if ($mysqli->connect_errno) {
+		echo "Не удалось подключиться к MySQL: " . mysqli_connect_error();
+		return false;
+	};
+	$mysqli->set_charset("utf8");
+	$method = $_SERVER['REQUEST_METHOD'];
+		if ($method == 'POST'){
+			$a=array();
+			$json = json_decode(file_get_contents('php://input'),true);
+			foreach ($json as $v){
+				$text="INSERT INTO `theatres_films`(`theatreID`, `filmID`) VALUES ('".$v['theatreID']."','".$v['filmID']."')";
+				$result=$mysqli->query($text);
+				$b=array('result'=>$result);
+				$a[]=$b;
+			};	
+			echo json_encode($a);
+			return;			
+		}
+?>
+
+
+  class MyTaskTF extends AsyncTask<JSONArray, Void, String > {
+
+        @Override
+        protected String doInBackground(JSONArray... jsonArrays) {
+            String line = "";
+            String total = "";
+            ArrayList<String[]> res=new ArrayList <>();
+            BufferedOutputStream os = null;
+            HttpURLConnection myConnection = null;
+            JSONObject obj=null;
+            try {
+                URL githubEndpoint = new URL("http://10.0.2.2:8080/kino/newtheatre_films");
+                myConnection = (HttpURLConnection) githubEndpoint.openConnection();
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            myConnection.setRequestProperty("Accept", "application/vnd.github.v3+kino");
+            myConnection.setRequestProperty("Contact-Me", "hathibelagal@example.com");
+            try {
+                myConnection.setRequestMethod("POST");
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            }
+            myConnection.setDoOutput(true);
+            myConnection.setDoOutput(true);
+            myConnection.setRequestProperty("Content-Type", "application/json;charset=utf-8");
+            myConnection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+
+            String message = jsonArrays[0].toString();
+
+            try {
+                os = new BufferedOutputStream(myConnection.getOutputStream());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                os.write(message.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                os.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            int i = 0;
+            try {
+                i = myConnection.getResponseCode();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (i == 200) {
+                InputStream responseBody = null;
+                try {
+                    responseBody = myConnection.getInputStream();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                BufferedReader r = new BufferedReader(new InputStreamReader(responseBody));
+                while (true) {
+                    try {
+                        if (!((line = r.readLine()) != null)) break;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    total = total + line;
+                }
+                JSONArray JA=new JSONArray();
+                try {
+                    JA=new JSONArray(total);
+                } catch (JSONException e) {
+                    total = total +"]";
+                    try {
+                        JA=new JSONArray(total);
+                    } catch (JSONException a) {
+                        a.printStackTrace();
+                    }
+                }
+                for (int j=0;j<JA.length();j++) {
+                    JSONObject JO=null;
+                    try {
+                        JO=JA.getJSONObject(j);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    String[] st= new String[2];
+                    try {
+                        st[0] = JO.getString("result").toString();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    res.add(st);
+                }            }
+            return total;        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            tvInfo.setText("End");
+            return;
+        }
+    }
